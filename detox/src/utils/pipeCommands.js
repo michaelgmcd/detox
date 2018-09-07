@@ -3,6 +3,7 @@ function win32Implementation() {
   const escapeInQuotedRegexpWin32 = escapeInQuotedStringWin32;
   const searchRegexpWin32 = (pattern) => `findstr /R /C:"${escapeInQuotedStringWin32(pattern)}"`;
   const searchFragmentWin32 = (fragment) => `findstr /C:"${escapeInQuotedStringWin32(fragment)}"`;
+  const addCR = 'find "" /v';
 
   return {
     escape: {
@@ -12,6 +13,9 @@ function win32Implementation() {
     search: {
       regexp: searchRegexpWin32,
       fragment: searchFragmentWin32,
+    },
+    normalize: {
+      crlf: addCR,
     },
   };
 }
@@ -23,6 +27,7 @@ function nixImplementation() {
   const escapeInQuotedRegexpNix = (fragment) => fragment.replace(SPECIAL_CHARS, "\\$1");
   const searchRegexpNix = (pattern) => `grep "${escapeInQuotedStringNix(pattern)}"`;
   const searchFragmentNix = (fragment) => `grep -e "${escapeInQuotedStringNix(fragment)}"`;
+  const stripCR = `tr -d $'\\r'`;
 
   return {
     escape: {
@@ -33,9 +38,12 @@ function nixImplementation() {
       regexp: searchRegexpNix,
       fragment: searchFragmentNix,
     },
+    normalize: {
+      crlf: stripCR,
+    },
   };
 }
 
-module.exports = process.platform === 'win32'
+module.exports = process.platform === 'win32' && !process.env['SHELL']
   ? win32Implementation()
   : nixImplementation();
