@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const path = require('path');
+const os = require('os');
 const {execWithRetriesAndLogs, spawnAndLog} = require('../../utils/exec');
 const pipeCommands = require('../../utils/pipeCommands');
 const EmulatorTelnet = require('./EmulatorTelnet');
@@ -110,10 +111,11 @@ class ADB {
   }
 
   async pidof(deviceId, bundleId) {
-    const bundleIdRegex = pipeCommands.escape.inQuotedRegexp(bundleId) + '[ ]*\\\\r\\\\?$';
+    const crlfNormalizer = os.platform() === 'win32' ? 'find "" /v' : "tr -d $'\\r'";
+    const bundleIdRegex = pipeCommands.escape.inQuotedRegexp(bundleId) + '[ ]*$';
     const grep = pipeCommands.search.regexp;
 
-    const processes = await this.shell(deviceId, `ps | ${grep(bundleIdRegex)}`).catch(() => '');
+    const processes = await this.shell(deviceId, `ps | ${crlfNormalizer} | ${grep(bundleIdRegex)}`).catch(() => '');
     if (!processes) {
       return NaN;
     }
